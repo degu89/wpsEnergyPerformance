@@ -94,6 +94,7 @@ public class EnergyPerformanceWPS implements GSProcess {
 		   dbEnergy.updateALL(climaticZone);
 		   LinkedList<EnergyModel> listaCertificate=dbEnergy.getResult();
 		   SimpleFeatureCollection createSimpleFeatureCollection = createSimpleFeatureCollection(listaCertificate,map);
+		   dbEnergy.deleteEnergytable();
 	//	   dbEnergy.insertInto(buildingList);
 		   return createSimpleFeatureCollection;
 
