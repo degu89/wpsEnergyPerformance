@@ -1,5 +1,7 @@
 package it.sinergis.gsc.db;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -7,6 +9,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.LinkedList;
+import java.util.Properties;
 
 import org.postgresql.PGStatement;
 
@@ -21,6 +24,10 @@ public class EnergyDBService {
 	private String tableName;
 	private String projection;
 	
+	private String jdbc;
+	private String user;
+	private String password;
+	private Boolean debug; 
 	
 	private Connection con;
 	
@@ -28,7 +35,43 @@ public class EnergyDBService {
 		this.schemaName = schema;
 		this.tableName = table;
 		this.projection = projection;
-		con =  DriverManager.getConnection("jdbc:postgresql://gsm-db:5432/geomap4data", "postgres", "postgres");
+		
+		Properties prop = new Properties();
+    	InputStream input = null;
+		
+    	
+    	
+    	
+    	try {
+            
+    		String filename = "configWPSEnergy.properties";
+    		input = getClass().getClassLoader().getResourceAsStream(filename);
+    		if(input==null){
+    	            System.out.println("Sorry, unable to find " + filename);
+    		    return;
+    		}
+
+    		//load a properties file from class path, inside static method
+    		prop.load(input);
+    	        jdbc = prop.getProperty("database");
+    	    	user = prop.getProperty("user");
+    	    	password = prop.getProperty("password");
+    	    	debug = Boolean.parseBoolean(prop.getProperty("debug","false"));
+ 
+    	} catch (IOException ex) {
+    		ex.printStackTrace();
+        } finally{
+        	if(input!=null){
+        		try {
+				input.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+        	}
+        }
+		
+		
+    	con =  DriverManager.getConnection(jdbc, user,password);
 		
 		//this.cp = cp;
 	}
@@ -46,6 +89,18 @@ public class EnergyDBService {
 		this.tableName = tableName;
 	}
 
+	public boolean deleteEnergytable() throws SQLException{
+		if (debug) return false;
+		String query = "DROP TABLE "+schemaName+"."+tableName+";";
+		Connection connection =con;
+		Statement stmt = connection.createStatement();
+
+		stmt.executeUpdate(query);
+		stmt.close();
+		return true;
+		
+	}
+	
 	
 	public boolean createEnergyTable() throws SQLException{
 		
@@ -104,6 +159,7 @@ public class EnergyDBService {
 		Statement stmt = connection.createStatement();
 
 		stmt.executeUpdate(query);
+		stmt.close();
 		return true;
 		
 	}
@@ -274,11 +330,11 @@ public class EnergyDBService {
 		 String dbUrl = "jdbc:postgresql://gsm-db:5432/geomap4data";
 		 String user = "postgres";
 		 String psw = "postgres";		 
-		
+		 System.out.println("prova");
 		EnergyDBService  dbEnergy= new EnergyDBService("wps_energy","tmp1454401115660","3044");
 		//dbEnergy.computeAreaPer();
 		//dbEnergy.updateFloor();
-		dbEnergy.updateALL("2");
+		//dbEnergy.updateALL("2");
 		
 		
 		/*
