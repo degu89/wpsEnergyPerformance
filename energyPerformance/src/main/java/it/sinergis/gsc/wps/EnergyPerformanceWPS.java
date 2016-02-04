@@ -7,6 +7,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
+import org.apache.log4j.Logger;
 import org.geotools.data.DataUtilities;
 import org.geotools.data.collection.ListFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureCollection;
@@ -38,9 +39,9 @@ import it.sinergis.gsc.db.EnergyDBService;
 
 @DescribeProcess(title="EnergyPerformanceWPS", description="EnergyPerformanceWPS sample")
 public class EnergyPerformanceWPS implements GSProcess {
-
-   @DescribeResult(name="result", description="mappa di energy performance ")
-   
+  final static Logger logger = Logger.getLogger(EnergyPerformanceWPS.class);
+  
+  @DescribeResult(name="result", description="mappa di energy performance ")
    public SimpleFeatureCollection execute(
 		   @DescribeParameter(name="climaticZone", min = 1, max=1, description="name of the TABULA climatic zone, for more info ceck the web page hub.geosmartcity.eu/information/tabula") String climaticZone,		   
 		   @DescribeParameter(name="begin", min = 0, max=1, description="") String begin,		   
@@ -88,28 +89,35 @@ public class EnergyPerformanceWPS implements GSProcess {
 	   
 	   try {
 		   EnergyDBService  dbEnergy= new EnergyDBService("wps_energy",nomeTabella,epscCode);
+		   
 		   dbEnergy.createEnergyTable();
+		   logger.debug("creata tabella");
 		   LinkedList<EnergyModel> listaBuilding=generateListeFeature(map,  id,  floors, height, begin,end, refurbihment, residential, aveFloor);
 		   dbEnergy.insertInto(listaBuilding,climaticZone);
+		   logger.debug("caricato il layer");
 		   dbEnergy.updateALL(climaticZone);
 		   LinkedList<EnergyModel> listaCertificate=dbEnergy.getResult();
 		   SimpleFeatureCollection createSimpleFeatureCollection = createSimpleFeatureCollection(listaCertificate,map);
 		   dbEnergy.deleteEnergytable();
+		   logger.debug("creato layer di ritorno");
 	//	   dbEnergy.insertInto(buildingList);
 		   return createSimpleFeatureCollection;
 
 	   } catch (SQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+			 logger.error("errore sql controllare le funzioni");
 			return null;
 	   }
 	   //SimpleFeatureCollection result = new S
 	   catch (SchemaException e) {
 			  //TODO Auto-generated catch block
 			  e.printStackTrace();
+			  logger.error("schema error");
 			  return null;
 	   } catch (ParseException e) {
 		// TODO Auto-generated catch block
+		   logger.error("ParseException");
 		e.printStackTrace();
 		return null;
 	}
@@ -275,6 +283,11 @@ public class EnergyPerformanceWPS implements GSProcess {
 		   }else if (tmp instanceof Boolean ){
 			   return Boolean.valueOf(((Boolean) tmp).booleanValue());
 		   }else if (tmp instanceof String ){
+			   String stmp = ((String)tmp).trim();
+			   if (stmp.equalsIgnoreCase("t" ))return true;
+			   if (stmp.equalsIgnoreCase("true" ))return true;
+			   if (stmp.equalsIgnoreCase("f" ))return true;
+			   if (stmp.equalsIgnoreCase("false" ))return false;
 			   return Boolean.parseBoolean(((String)tmp).trim());
 		   }
 		   return null;
